@@ -2157,6 +2157,17 @@ Unless stated otherwise, it is false.
 
 <p class=note>This flag is for exclusive use by HTML's render-blocking mechanism. [[!HTML]]
 
+<p>A <a for=/>request</a> has an associated boolean <dfn export for=request>is HTTPS upgrade</dfn>.
+Unless stated otherwise, it is false.
+
+<p class=note>This is for exclusive use by HTTPS Upgrading algorithm.
+
+<p>A <a for=/>request</a> has an associated
+<dfn export for=request>HTTPS upgrade fallback URL</dfn>, which is a <a for=/>URL</a>. Unless
+otherwise stated, it is null.
+
+<p class=note>This is for exclusive use by HTTPS Upgrading algorithm.
+
 <hr>
 
 <p>A <a for=/>request</a> has an associated
@@ -3265,6 +3276,110 @@ through TLS using ALPN. The protocol cannot be spoofed through HTTP requests in 
 </div>
 
 
+<h3 id=https-upgrades>HTTPS upgrading</h3>
+
+<p>User agents may optionally upgrade requests with URLs that are not
+<a>potentially trustworthy URLs</a> to attempt to fetch them over
+<a>potentially trustworthy URLs</a>. If an upgraded request fails with a network error, it is
+retried over the original URL.
+
+<p>The HTTPS upgrading algorithm consists of <a>upgrade an HTTP request</a> and <a>HTTPS upgrade
+fallback</a> algorithms.
+
+<div algorithm>
+<h4 id=https-upgrades-upgrade>HTTPS upgrade algorithm</h4>
+
+<p>To <dfn>upgrade an HTTP request</dfn> given a <a for=/>request</a> <var>request</var>:
+
+<ol>
+ <li>
+  <p>If one or more of the following conditions are met, return:
+  <ul>
+   <li><p><var>request</var>'s <a for="request">destination</a> is not "<code>document</code>"
+
+   <li><p><var>request</var>'s <a for="request">method</a> is not "<code>GET</code>"
+
+   <li><p><var>request</var>'s <a for="request">URL</a>'s <a for="url">scheme</a> is not
+   "<code>http</code>"
+
+   <li>
+    <p><var>request</var>'s <a for="request">URL</a>'s <a for="url">host</a> is exempted from
+    upgrades in an <a>implementation-defined</a> way.
+
+    <p class=example id="example-https-upgrades-exempted-hosts">If <a for=url>host</a> is a
+    non-registrable or non-assignable domain name such as .local or an IP address that falls in a
+    range reserved for non-publicly routable networks, the implementation might return without
+    modifying <var>request</var>.
+  </ul>
+ </li>
+
+ <li>
+  <p>If <var>request</var>'s <a for=request>HTTPS upgrade fallback URL</a> is non-null, clear
+  <a for=request>is HTTPS upgrade</a> and <a for=request>HTTPS upgrade fallback URL</a> and return.
+
+  <p class=note>This is a fallback request that shouldn't be upgraded again.
+
+ <li>
+  <p>Otherwise, set the following fields:
+  <ul>
+   <li><p>Set <a for=request>HTTPS upgrade fallback URL</a> to <var>request</var>'s
+   <a for="request">URL</a>.
+
+   <li><p>Set <var>request</var>'s <a for="request">URL</a>'s <a for="url">scheme</a> to
+   "<code>https</code>".
+
+   <li><p>Set <a for=request>is HTTPS upgrade</a> to true.
+  </ul>
+ </li>
+</ol>
+</div>
+
+<div algorithm>
+<h4 id=https-upgrades-fallback>Fallback algorithm</h4>
+
+<p>To run <dfn>HTTPS upgrade fallback</dfn> given a <a for=/>request</a> <var>request</var> and
+<a for=/>response</a> <var>response</var>:
+
+<ol>
+ <li><p>If <var>request</var>'s <a for=request>is HTTPS upgrade</a> is not set, return
+ <var>response</var>.
+
+ <li>
+  <p>If <var>response</var> is a network error, run the following steps:
+  <p class=note>This means that the upgrade failed and initiates a fallback load.
+  <ol>
+   <li><p>Let <var>fallbackResponse</var> be a new <a for=/>Response</a> with its
+   <code>Location</code> header set to <var>request</var>'s <a for=request>HTTPS upgrade fallback
+   URL</a>, and its <a for="response">status</a> set to 307.
+
+   <li>Return <var>fallbackResponse</var>.
+  </ol>
+
+ <li>
+  <p>Return <var>response</var>.
+  <p class=note>This means the upgrade was successful.
+
+</ol>
+<p class=note>User agents can implement a fast-fallback path by canceling slow fetches on upgraded
+requests, in order to quickly initiate a fallback http load.
+
+</div>
+
+<h4 id=http-upgrades-examples>Examples</h4>
+
+<div id=example-https-upgrade-good-https class=example>
+ <p><code>a.com</code> serves both <code>http://a.com</code> and <code>https://a.com</code>. An
+ eligible request to <code>http://a.com</code> will be upgraded to <code>https://a.com</code>.
+</div>
+
+<div id=example-https-upgrade-bad-https class=example>
+ <p>
+  <code>a.com</code> serves <code>http://a.com</code> but refuses connections on
+  <code>https://a.com</code>.
+  An eligible request to <code>http://a.com</code> will be upgraded to <code>https://a.com</code>,
+  but the fetch will fail.
+  A fallback request will be initiated to <code>http://a.com</code>.
+</div>
 
 <h2 id=http-extensions>HTTP extensions</h2>
 
@@ -4445,6 +4560,14 @@ steps:
 
  <li><p><a>Upgrade <var>request</var> to a potentially trustworthy URL, if appropriate</a>.
 
+ <li>
+  <p>Optionally, run <a>upgrade an HTTP request</a> algorithm on <var>request</var>.
+
+  <p class=note>HTTPS upgrading only applies to requests with <a>HTTP(S) scheme</a>s, but it's done
+  in <a>main fetch</a> instead of <a>HTTP fetch</a> to ensure that
+  <a>upgrade a mixed content <var>request</var> to a potentially trustworthy URL, if appropriate</a>
+  step runs next and applies to the upgraded request.
+
  <li><p><a>Upgrade a mixed content <var>request</var> to a potentially trustworthy URL, if appropriate</a>.
 
  <li><p>If <a lt="block bad port">should <var>request</var> be blocked due to a bad port</a>,
@@ -5153,12 +5276,14 @@ these steps:
      <a>filtered response</a>; otherwise to <var>response</var>'s
      <a for="filtered response">internal response</a>.
 
+     <li><p>If <var>response</var>'s <a for=response>type</a> is "<code>error</code>", then
+     return the result of running <a>HTTPS upgrade fallback</a> given <var>request</var>
+     and a <a>network error</a>.
+
      <li>
       <p>If one of the following is true
 
       <ul class=brief>
-       <li><p><var>response</var>'s <a for=response>type</a> is "<code>error</code>"
-
        <li><p><var>request</var>'s <a for=request>mode</a> is "<code>same-origin</code>" and
        <var>response</var>'s <a for=response>type</a> is "<code>cors</code>"
 
@@ -5245,6 +5370,10 @@ these steps:
   network and responses coming from the service worker. This is different from the
   <a>CORS check</a>, as <var>request</var>'s <a for=request>client</a> and the service worker can
   have different embedder policies.
+
+ <li>If <var>request</var>'s <a for=request>is HTTPS upgrade</a> is set, set <var>response</var> and
+  <var>internalResponse</var> to the result of running <a>HTTPS upgrade fallback</a> given
+  <var>request</var> and <var>response</var>.
 
  <li>
   <p>If <var>internalResponse</var>'s <a for=response>status</a> is a <a>redirect status</a>:
