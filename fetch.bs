@@ -4621,8 +4621,6 @@ steps:
 
  <li><p><a>Upgrade <var>request</var> to a potentially trustworthy URL, if appropriate</a>.
 
- <li><p>Optionally, run <a>upgrade an HTTP request</a> algorithm on <var>request</var>.
-
  <li><p><a>Upgrade a mixed content <var>request</var> to a potentially trustworthy URL, if appropriate</a>.
 
  <li><p>If <a lt="block bad port">should <var>request</var> be blocked due to a bad port</a>,
@@ -4671,6 +4669,8 @@ steps:
   agents might need to perform DNS operations earlier, consult local DNS caches, or wait until later
   in the fetch algorithm and potentially unwind logic on discovering the need to change
   <var>request</var>'s <a for=request>current URL</a>'s <a for=url>scheme</a>.
+
+ <li><p>Optionally, run <a>upgrade an HTTP request</a> algorithm on <var>request</var>.
 
  <li><p>If <var>recursive</var> is false, then run the remaining steps <a>in parallel</a>.
 
