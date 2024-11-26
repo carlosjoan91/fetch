@@ -3420,7 +3420,7 @@ allowlist entry for <code>a.com</code> to 7 days from now.
 
 <p id=example-https-upgrade-ports class=example><code>a.com</code> serves
 <code>http://a.com:8080</code>. When a site is served from a non-default HTTP port, it's unlikely
-that the corresponding HTTPS URL is served from the default port either. Therefore, user agent
+that the corresponding HTTPS URL is served from the default port either. Therefore, the user agent
 doesn't upgrade requests to <code>http://a.com:8080.</code>
 
 <p id=example-https-upgrade-redirect-loop class=example><code>a.com</code> serves
